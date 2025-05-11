@@ -7,26 +7,31 @@ interface ChatMessageProps {
 }
 
 export default function ChatMessage({ message }: ChatMessageProps) {
+  const isUser = message.role === 'user';
   return (
-    <div className={`flex items-start gap-4 p-4 ${message.role === 'assistant' ? 'bg-gray-50' : ''}`}>
-      <div className="flex-shrink-0">
-        {message.role === 'user' ? (
-          <UserIcon className="h-8 w-8 text-gray-400" />
-        ) : (
-          <ChatBubbleLeftIcon className="h-8 w-8 text-blue-500" />
-        )}
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+      {!isUser && (
+        <div className="flex-shrink-0 mr-2">
+          <ChatBubbleLeftIcon className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+        </div>
+      )}
+      <div
+        className={`max-w-[75%] rounded-2xl px-4 py-3 text-base shadow-md
+          ${isUser
+            ? 'bg-blue-500 text-white dark:bg-blue-600 ml-auto'
+            : 'bg-gray-100 text-gray-900 dark:bg-[#23272f] dark:text-gray-100 mr-auto'}
+        `}
+      >
+        {message.content}
+        <div className="mt-1 text-xs text-gray-400 dark:text-gray-500 text-right">
+          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
       </div>
-      <div className="flex-1 space-y-2">
-        <div className="text-sm font-medium text-gray-900">
-          {message.role === 'user' ? 'You' : 'Assistant'}
+      {isUser && (
+        <div className="flex-shrink-0 ml-2">
+          <UserIcon className="h-8 w-8 text-gray-400 dark:text-gray-300" />
         </div>
-        <div className="text-sm text-gray-700 whitespace-pre-wrap">
-          {message.content}
-        </div>
-        <div className="text-xs text-gray-500">
-          {message.timestamp.toLocaleTimeString()}
-        </div>
-      </div>
+      )}
     </div>
   );
 } 

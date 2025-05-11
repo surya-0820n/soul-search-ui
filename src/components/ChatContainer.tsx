@@ -1,4 +1,5 @@
-import { useState } from 'react';
+'use client';
+import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { Message, ChatState } from '@/types/chat';
@@ -13,6 +14,11 @@ export default function ChatContainer() {
     isLoading: false,
     error: null,
   });
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [state.messages, state.isLoading]);
 
   const sendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -60,8 +66,8 @@ export default function ChatContainer() {
   };
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-gray-50 dark:bg-[#15171a] transition-colors">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4" style={{scrollbarGutter:'stable'}}>
         {state.messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
@@ -71,10 +77,11 @@ export default function ChatContainer() {
           </div>
         )}
         {state.error && (
-          <div className="rounded-lg bg-red-50 p-4 text-red-700">
+          <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-4 text-red-700 dark:text-red-300">
             {state.error}
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
       <ChatInput onSendMessage={sendMessage} isLoading={state.isLoading} />
     </div>

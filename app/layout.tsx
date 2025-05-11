@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,9 +25,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="bg-white dark:bg-[#15171a] transition-colors min-h-screen">
+        <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#15171a] p-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Soul Search Chat</h1>
+          <DarkModeToggle />
+        </header>
         {children}
       </body>
     </html>
