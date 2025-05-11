@@ -1,89 +1,95 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
-import { Message, ChatState } from '@/types/chat';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+import { Message } from '@/types/chat';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ChatContainer() {
-  const [state, setState] = useState<ChatState>({
-    messages: [],
-    isLoading: false,
-    error: null,
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const fetchMessages = async () => {
+    // Since we don't have a messages endpoint, we'll return an empty array
+    // The messages will be managed in the component state
+    return [];
+  };
+
+  const { data: fetchedMessages, isLoading: queryLoading } = useQuery({
+    queryKey: ['messages'],
+    queryFn: fetchMessages,
+  });
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [state.messages, state.isLoading]);
+    if (fetchedMessages) {
+      setMessages(fetchedMessages);
+    }
+  }, [fetchedMessages]);
 
-  const sendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: uuidv4(),
-      content,
-      role: 'user',
-      timestamp: new Date(),
-    };
-
-    setState(prev => ({
-      ...prev,
-      messages: [...prev.messages, userMessage],
-      isLoading: true,
-      error: null,
-    }));
-
+  const handleSendMessage = async (content: string) => {
+    setIsLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/ask`, {
-        text: content,
-        model: "auto",
-        provide_relevant_context: true,
-        top_k: 3,
-        data_source_priority: "both"
+      const response = await fetch(`${API_URL}/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          text: content,
+          model: "openai",
+          provide_relevant_context: true,
+          top_k: 3,
+          data_source_priority: "both"
+        }),
       });
 
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        content: response.data.answer,
-        role: 'assistant',
-        timestamp: new Date(),
-      };
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
 
-      setState(prev => ({
+      const data = await response.json();
+      const now = new Date();
+      
+      setMessages(prev => [
         ...prev,
-        messages: [...prev.messages, assistantMessage],
-        isLoading: false,
-      }));
+        {
+          id: Date.now().toString(),
+          content,
+          role: 'user',
+          timestamp: now,
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          content: data.answer,
+          role: 'assistant',
+          timestamp: new Date(now.getTime() + 1),
+        },
+      ]);
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Failed to get response. Please try again.',
-      }));
+      console.error('Error sending message:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-gray-50 dark:bg-[#15171a] transition-colors">
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4" style={{scrollbarGutter:'stable'}}>
-        {state.messages.map((message) => (
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-[#15171a]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
-        {state.isLoading && (
-          <div className="flex items-center justify-center p-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          </div>
-        )}
-        {state.error && (
-          <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-4 text-red-700 dark:text-red-300">
-            {state.error}
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
-      <ChatInput onSendMessage={sendMessage} isLoading={state.isLoading} />
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-[#15171a]">
+        <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+      </div>
     </div>
   );
 } 

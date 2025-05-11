@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import DarkModeToggle from "@/components/DarkModeToggle";
+import Providers from "@/components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,13 +25,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-white dark:bg-[#15171a] transition-colors min-h-screen">
-        <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#15171a] p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Soul Search Chat</h1>
-          <DarkModeToggle />
-        </header>
-        {children}
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark')
+                } else {
+                  document.documentElement.classList.remove('dark')
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen bg-white text-gray-900 dark:bg-[#15171a] dark:text-gray-100 transition-colors">
+        <Providers>
+          <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#15171a] p-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Soul Search Chat</h1>
+            <DarkModeToggle />
+          </header>
+          {children}
+        </Providers>
       </body>
     </html>
   );
